@@ -38,6 +38,67 @@ CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
 - `EXPOSE 8000`: documenta el puerto
 - `CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]`: define  comando de arranque importante para ejecutar la app correctamente
 
+
+
+### 2. **Optimizacion de Dockerfile**
+
+**Analiza el Dockerfile de service-user y (diagrama de capas) justifica el orden de instrucciones.**
+
+```Dockerfile
+# User-Service Dockerfile
+FROM python:3.10-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY app.py .
+EXPOSE 8000
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+**Capas:**
+1. `FROM python:3.10-slim` : Base
+2. `WORKDIR /app` : configuracion  directorio 
+3. `COPY requirements.txt .` : copia archivo 
+4. `RUN pip install --no-cache-dir -r requirements.txt` : instala fastAPI, uvicorn, pydantic
+5. `COPY app.py .` : copia codigo
+6. `EXPOSE 8000` : metadato
+7. `CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]` : metadato 
+
+**Justificacion del orden:**
+1. `FROM` primero para establecer la base
+2. `WORKDIR` antes de copiar para organizar archivos
+3. `COPY requirements.txt` y `RUN pip install` antes de copiar el codigo para aprovechar el cache de Docker: cambios app.py no invalidan instalacion dependencias
+4. `COPY  app.py` al final porque el codigo cambia
+5. `EXPOSE` y `CMD` ultimos por ser metadatos
+
+**Propón optimizaciones (por ejemplo, combinar instrucciones RUN, usar imágenes base más ligeras) y detalla cómo mejorarían el tiempo de build o el tamaño de imagen**
+
+* usar imagen base mas ligera se tendria que cambiaar a `python:3.10-alpine`
+* multistage builds:
+```Dockerfile
+FROM python:3.10-slim AS builder
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.10-slim
+WORKDIR /app
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY app.py .
+EXPOSE 8000
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+* tambie se podriaa especificar versiones en `requirements.txt`:
+```c
+fastapi==0.103.0
+uvicorn==0.23.2
+pydantic==2.4.2
+```
+
+### 3. **Redes y volúmenes en un entorno real**
+
+
+
+
 ## **Ejecucion del proyecto**
 
 **1. Prerrequisitos**
